@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <title>Amazon Search tool</title>
+</head>
+
+<body>
+    <div>
+        <p><a href="ttps://www.amazon.co.jp/" target="_blank">Amazon</a>検索の条件付け</p>
+    </div>
+    <div>
+        <label for="searchWords">検索したいもの:</label>
+        <input type="text" id="searchWords" name="searchWords" required>
+        <a id="resultLink" href="https://www.amazon.co.jp/" target="_blank">検索結果</a>
+        <fieldset>
+            <legend>検索する条件など</legend>
+            <div>
+                <input type="checkbox" id="onlyAmazon" name="onlyAmazon" checked>
+                <label for="onlyAmazon">Amazonからの公式出品のみ</label>
+
+            </div>
+
+            <fieldset>
+                <legend>ソートに関する設定</legend>
+                <div id="RankRadio">
+                    <input type="radio" id="noRank" name="sortBy" value="" checked>
+                    <label for="noRank">ソートなし</label>
+
+                    <input type="radio" id="popularityRankDesc" name="sortBy" value="popularity-rank">
+                    <label for="popularityRankDesc">人気の高い順</label>
+
+                    <input type="radio" id="salesRankDesc" name="sortBy" value="salesrank">
+                    <label for="salesRankDesc">売上のいい順</label>
+
+                    <input type="radio" id="salesRankAsc" name="sortBy" value="-salesrank">
+                    <label for="salesRankAsc">売上の悪い順</label>
+
+                    <input type="radio" id="reviewRankDesc" name="sortBy" value="review-rank">
+                    <label for="reviewRankDesc">レビューの良い順</label>
+
+                    <input type="radio" id="reviewRankAsc" name="sortBy" value="-review-rank">
+                    <label for="reviewRankAsc">レビューの悪い順</label>
+
+                    <input type="radio" id="priceDesc" name="sortBy" value="-price">
+                    <label for="priceDesc">価格の高い順</label>
+
+                    <input type="radio" id="priceAsc" name="sortBy" value="price">
+                    <label for="priceAsc">価格の低い順</label>
+                </div>
+
+                <div>
+                    <input type="radio" id="releaseDateDesc" name="sortBy" value="releasedate">
+                    <label for="releaseDateDesc">発売日の新しい順</label>
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>予算に関する設定</legend>
+                <label for="lowerLimit">最低金額</label>
+
+                <input type="number" id="lowerLimit" name="lowerLimit" min="1">
+
+                <label for="upperLimit">最高金額</label>
+
+                <input type="number" id="upperLimit" name="upperLimit" min="1">
+            </fieldset>
+
+        </fieldset>
+    </div>
+
+    <script>
+        function makeGetParameters(queryString, onlyAmazon, sortParameter, lowerLimitNumber, upperLimitNumber) {
+            let parameterList = [];
+
+            if (queryString == "") {
+                return "";
+            }
+            parameterList.push("k=" + queryString);
+
+            if (onlyAmazon) {
+                parameterList.push("emi=AN1VRQENFRJN5");
+            }
+
+            if (lowerLimitNumber != "" || upperLimitNumber != "") {
+                parameterList.push("high-price=" + upperLimitNumber);
+            }
+
+            if (lowerLimitNumber != "" || upperLimitNumber != "") {
+                parameterList.push("low-price=" + lowerLimitNumber);
+            }
+
+            if (sortParameter != "") {
+                parameterList.push("s=" + sortParameter);
+            }
+
+            let parameters = parameterList.join("&");
+            return "?" + encodeURI(parameters);
+        }
+
+        window.addEventListener("input", function () {
+            //入力されたパラメータによってresultLinkのGetパラメータを変更する
+            let queryStringInput = document.getElementById("searchWords");
+            let onlyAmazonCheckBox = document.getElementById("onlyAmazon");
+            let rankRadios = document.getElementsByName("sortBy");
+            let lowerLimitInput = document.getElementById("lowerLimit");
+            let upperLimitInput = document.getElementById("upperLimit");
+
+            let queryString = queryStringInput.value;
+            let onlyAmazon = onlyAmazonCheckBox.checked;
+            let sortParameter = "";
+            for (const radio of rankRadios) {
+                if (radio.checked == true) {
+                    sortParameter = radio.value;
+                    break;
+                }
+            }
+            let lowerLimitNumber = lowerLimitInput.value;
+            let upperLimitNumber = upperLimitInput.value;
+
+            let getParameters = makeGetParameters(queryString, onlyAmazon, sortParameter, lowerLimitNumber, upperLimitNumber);
+
+            let resultLinkA = document.getElementById("resultLink");
+            resultLinkA.setAttribute('href', "https://www.amazon.co.jp/s" + getParameters);
+
+        });
+    </script>
+</body>
+
+</html>

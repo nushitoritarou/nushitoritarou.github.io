@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <title>Lovotお名前チェッカー</title>
+</head>
+<script>
+    function onClickButton() {
+        const nameInput = document.getElementById('lovotName');
+        console.log(nameInput.value);
+        const nameValue = nameInput.value;
+        // ー(長音)はひらがなとするため置き換え
+        const isNameHiragana = isHiragana(nameInput.value.replace(/ー/g, 'あ'));
+        console.log(isNameHiragana);
+
+        const nameLength = nameValue.length;
+        console.log(nameLength + "文字");
+        const syllablePattern = convertToSyllablePatternFromName(nameValue);
+        console.log(syllablePattern.length + "音節");
+
+        outResult(getResultMessage(isNameHiragana, nameValue.length, syllablePattern.length));
+    }
+
+    function isHiragana(name) {
+        const regex = /^[\p{sc=Hiragana}]+$/u;
+        return regex.test(name);
+    }
+
+    /*
+    * 以下のような音節のパターンを返却。返却値のlengthが音節の数
+    * もも -> 22(2音節)
+    * しゃあ -> 21(2音節)
+    * しゃっくりん -> 526(3音節)
+    * しーざーさらだ -> 44222(5音節)
+    * じぃんぎすかーん -> 62243(5音節)
+    */
+    function convertToSyllablePatternFromName(name) {
+        /*
+        * 1. 母音(あ、い、う、え、お)
+        * 2. ⼦⾳＋⺟⾳(か、し、つ、ね、ほ、きゃ、しゅ、りょ、…)
+        * 3. 撥⾳(ん)
+        * 4. 1 または 2 ＋ ⻑⾳(あー、きー、すー、きゃー、しゅー、りょー、…)
+        * 5. 1 または 2 ＋ 促⾳(あっ、きっ、すっ、きゃっ、しゅっ、りょっ、…)
+        * 6. 1 または 2 ＋ 撥⾳(あん、きん、すん、きゃん、しゅん、りょん、…)
+        */
+        const pattern1reg = /あ|い|う|え|お/g;
+        const pattern2reg = /きゃ|きぃ|きゅ|きょ|くゃ|くゅ|くょ|しゃ|しぃ|しゅ|しぇ|しょ|ちゃ|ちぃ|ちゅ|ちぇ|ちょ|てゃ|てぃ|てゅ|てぇ|てょ|ひゃ|ひぃ|ひゅ|ひぇ|ひょ|ふぁ|ふぃ|みゃ|みぃ|みゅ|みぇ|みょ|ゔぁ|ゔぃ|ゔぇ|ゔぉ|ぎゃ|ぎぃ|ぎゅ|ぎぇ|ぎょ|じゃ|じぃ|じゅ|じぇ|じょ|ぢゃ|ぢぃ|ぢゅ|ぢぇ|ぢょ|びゃ|びぃ|びゅ|びぇ|びょ|ぴゃ|ぴぃ|ぴゅ|ぴぇ|ぴょ|でぃ|か|き|く|け|こ|さ|し|す|せ|そ|た|ち|つ|て|と|な|に|ぬ|ね|の|は|ひ|ふ|へ|ほ|ま|み|む|め|も|や|ゆ|よ|ら|り|る|れ|ろ|わ|ゐ|う|ゑ|を|ゔ|が|ぎ|ぐ|げ|ご|ざ|じ|ず|ぜ|ぞ|だ|ぢ|づ|で|ど|ば|び|ぶ|べ|ぼ|ぱ|ぴ|ぷ|ぺ|ぽ/g;
+        const pattern3reg = /ん/g;
+        const pattern4reg = /1ー|2ー/g;
+        const pattern5reg = /1っ|2っ/g;
+        const pattern6reg = /13|23/g;
+        // 拗⾳を含む音節は、通常1音節として数えますが、一部の例外は2音節として数えます。(くぁ、くぃ、きぇ、…)
+        const pattern7reg = /(ぁ)|(ぃ)|(ぅ)|(ぇ)|(ぉ)/g;
+        const patternString = name.replace(pattern1reg, "1").replace(pattern2reg, "2").replace(pattern3reg, "3").replace(pattern4reg, "4").replace(pattern5reg, "5").replace(pattern6reg, "6").replace(pattern7reg, "7");
+        return patternString;
+    }
+
+    /*
+    * LOVOTの名前には、以下の条件があります。
+    * ひらがな
+    * 最短： 3文字以上、かつ、2音節以上
+    * 最長： 6文字以内、または、4音節以内
+    */
+    function getResultMessage(isHiragana, charLength, syllLength) {
+        const OK_MESSAGE = "その名前は使用できます";
+        const NOT_HIRAGANA_MESSAGE = "使えない文字が含まれている";
+        const TOO_MANY_CHAR_MESSAGE = "文字数が多すぎる";
+        const TOO_MANY_SYLL_MESSAGE = "音節が多すぎる";
+        const LESS_CHAR_MESSAGE = "文字数が少ない";
+        const LESS_SYLL_MESSAGE = "音節が少ない";
+
+        if (isHiragana && (charLength >= 3 && syllLength >= 2) && (charLength <= 6 || syllLength <= 4)) {
+            return OK_MESSAGE;
+        }
+
+        let resultMessageList = [];
+        if (!isHiragana) {
+            resultMessageList.push(NOT_HIRAGANA_MESSAGE);
+        }
+        if (!(charLength >= 3)) {
+            resultMessageList.push(LESS_CHAR_MESSAGE);
+        }
+        if (!(syllLength >= 2)) {
+            resultMessageList.push(LESS_SYLL_MESSAGE);
+        }
+        if (!(charLength <= 6)) {
+            resultMessageList.push(TOO_MANY_CHAR_MESSAGE);
+        }
+        if (!(syllLength <= 4)) {
+            resultMessageList.push(TOO_MANY_SYLL_MESSAGE);
+        }
+
+        return resultMessageList.join();
+    }
+    function outResult(result) {
+        let resultElement = document.getElementById('result');
+        resultElement.textContent = result;
+    }
+    function triggerButtonOnEnter() {
+        if (window.event.keyCode == 13) {
+            document.getElementById('checkButton').click();
+        }
+    }
+</script>
+
+<body>
+    <h1>Lovotお名前チェッカー</h1>
+    <label for="lovotName">お名前</label>
+    <input type="text" id="lovotName" name="lovotName" required onkeydown="triggerButtonOnEnter()">
+    <button id="checkButton" type="button" onclick="onClickButton()">check</button>
+    <div id="result"></div>
+    <p>以下のページを参考にチェックが可能なフォームです。<br>
+        <a href="https://help.lovot.life/app/settings/name-setting/">LOVOTの名前を変更する – LOVOT</a>
+    </p>
+    <p>LOVOTの名前には、以下の条件があります。</p>
+    <ul>
+        <li>ひらがな</li>
+        <li>最短： 3文字以上、かつ、2音節以上</li>
+        <li>最長： 6文字以内、または、4音節以内</li>
+    </ul>
+
+
+</body>
+
+</html>

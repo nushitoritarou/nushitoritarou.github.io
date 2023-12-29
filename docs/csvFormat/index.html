@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Keymaps Viewer</title>
+  <title>CSV Formatter</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -43,7 +43,7 @@
     <li>データを用意する。（ツール内で半角スペースと改行を削除してしまうので、データ内に含まれる場合は注意）</li>
     <li>データをInputのテキストエリアに貼り付ける</li>
     <li>行数（縦のデータ数）をrowsに入力する</li>
-    <li>列数（横のデータ数）をcolsに入力する。※1に入力すると、2,3,4と後ろにも反映される。</li>
+    <li>列数（横のデータ数）をcolsに入力する。</li>
     <li>「整形」ボタンを押す</li>
     <li>「クリップボードにコピー」ボタンでクリップボードにコピーしてお好きなところに貼り付け</li>
   </ul>
@@ -53,8 +53,9 @@
       <label for="rows">Rows:</label>
       <input type="number" id="rows" value="5" min="1">
     </li>
-    <p>入力したColsの数値は後ろの列数にも反映される。</p>
-    <div id="colsContainer"></div>
+    <div id="colsContainer">
+      <li><label>Cols:</label><input type="number" id="cols" class="cols-input" min="1" value="14"</li>
+    </div>
     <li>
       <h1>Input</h1>
       <textarea id="keymapInput" rows="10"
@@ -70,34 +71,6 @@
   <script>
     const rowsInput = document.getElementById('rows');
     const colsContainer = document.getElementById('colsContainer');
-    rowsInput.addEventListener('change', function () {
-      addCols();
-    });
-    window.onload = function () {
-      addCols();
-    };
-    function addCols() {
-      colsContainer.innerHTML = '';
-      for (let i = 0; i < rowsInput.value; i++) {
-        const li = document.createElement('li');
-        const label = document.createElement('label');
-        label.textContent = `Cols ${i + 1}:`;
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.id = `cols${i + 1}`;
-        input.className = 'cols-input';
-        input.value = '14';
-        input.min = '1';
-        input.addEventListener('change', function () {
-          for (let j = i + 1; j < rowsInput.value; j++) {
-            document.getElementById(`cols${j + 1}`).value = input.value;
-          }
-        });
-        li.appendChild(label);
-        li.appendChild(input);
-        colsContainer.appendChild(li);
-      }
-    }
 
     function copyToClipboard() {
       const output = document.getElementById('output');
@@ -112,7 +85,7 @@
     function setOutput() {
       const keymapContent = document.getElementById('keymapInput').value;
       const rows = document.getElementById('rows').value;
-      const cols = Array.from(document.getElementsByClassName('cols-input')).map(input => input.value);
+      const cols = document.getElementById('cols').value;
 
       const output = document.getElementById('output');
       const formatedArray = changeFormat(keymapContent.replaceAll(' ', '').replaceAll('\r', '').replaceAll('\n', ''), rows, cols);
@@ -162,7 +135,7 @@
       let temp = input.split(/,(?![^()]*\))/);
       for (let i = 0; i < rows; i++) {
         output[i] = [];
-        for (let j = 0; j < cols[i]; j++) {
+        for (let j = 0; j < cols; j++) {
           if (temp.length > 0) {
             output[i][j] = temp.shift();
           }

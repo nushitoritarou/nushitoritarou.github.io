@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>CSV Formatter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      /* Preserve whitespace and wrap lines */
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 5px;
+    }
+
+    label,
+    input,
+    button {
+      margin: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>CSVのデータの縦横整形ツール</h1>
+  <p>CSV(カンマ区切りデータ)の縦の列をスペースでいい感じに整形するツール</p>
+  <p>もともとはQMKでキーマップ作製するときにkeymap.cのキーマップ定義をきれいに整列したい用途で作成。</p>
+  <h2>使い方</h2>
+  <p>
+  <ul>
+    <li>データを用意する。（ツール内で半角スペースと改行を削除してしまうので、データ内に含まれる場合は注意）</li>
+    <li>データをInputのテキストエリアに貼り付ける</li>
+    <li>行数（縦のデータ数）をrowsに入力する</li>
+    <li>列数（横のデータ数）をcolsに入力する。</li>
+    <li>「整形」ボタンを押す</li>
+    <li>「クリップボードにコピー」ボタンでクリップボードにコピーしてお好きなところに貼り付け</li>
+  </ul>
+  </p>
+  <ul>
+    <li>
+      <label for="rows">Rows:</label>
+      <input type="number" id="rows" value="5" min="1">
+    </li>
+    <div id="colsContainer">
+      <li><label>Cols:</label><input type="number" id="cols" class="cols-input" min="1" value="14"</li>
+    </div>
+    <li>
+      <h1>Input</h1>
+      <textarea id="keymapInput" rows="10"
+        cols="80">KC_ESC,KC_1,KC_2,KC_3,KC_4,KC_5,,,KC_6,KC_7,KC_8,KC_9,KC_0,KC_MINS,KC_TAB,KC_Q,KC_W,KC_E,KC_R,KC_T,KC_EQL,KC_RBRC,KC_Y,KC_U,KC_I,KC_O,KC_P,KC_LBRC,KC_LCTL,KC_A,KC_S,KC_D,KC_F,KC_G,KC_INT3,KC_NUHS,KC_H,KC_J,KC_K,KC_L,KC_SCLN,KC_QUOT,KC_LSFT,KC_Z,KC_X,KC_C,KC_V,KC_B,KC_DEL,KC_BSPC,KC_N,KC_M,KC_COMM,KC_DOT,KC_SLSH,KC_INT1,KC_LCTL,KC_LGUI,KC_LALT,LT(1,KC_INT5),MT(MOD_LSFT,KC_SPC),KC_NO,KC_NO,KC_RCTL,KC_ENT,MT(MOD_LSFT,KC_SPC),LT(1,KC_INT2),KC_RALT,KC_APP,KC_ENT</textarea>
+    </li>
+    <li>
+      <h1>Output</h1>
+      <button onclick="setOutput()">整形</button>
+      <button onclick="copyToClipboard()">クリップボードにコピー</button>
+      <pre id="output"></pre>
+    </li>
+  </ul>
+  <script>
+    const rowsInput = document.getElementById('rows');
+    const colsContainer = document.getElementById('colsContainer');
+
+    function copyToClipboard() {
+      const output = document.getElementById('output');
+      const el = document.createElement('textarea');
+      el.value = output.textContent;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+
+    function setOutput() {
+      const keymapContent = document.getElementById('keymapInput').value;
+      const rows = document.getElementById('rows').value;
+      const cols = document.getElementById('cols').value;
+
+      const output = document.getElementById('output');
+      const formatedArray = changeFormat(keymapContent.replaceAll(' ', '').replaceAll('\r', '').replaceAll('\n', ''), rows, cols);
+      output.textContent = formatArray(formatedArray);
+    }
+    /**
+     * このメソッドは2次元配列inputを受け取り、
+     * 空白を使用して縦横を揃えたテキストを出力します。
+     * その列の最大文字数の文字に合わせて縦の並びをそろえます。
+     * 
+     * @param {Array} input 2次元配列
+     * @return {String} 整形されたテキスト
+     */
+    function formatArray(input) {
+      let output = '';
+      let maxLen = [];
+      for (let i = 0; i < input.length; i++) {
+        for (let j = 0; j < input[i].length; j++) {
+          maxLen[j] = Math.max(maxLen[j] || 0, input[i][j].length);
+        }
+      }
+      console.log(maxLen);
+      for (let i = 0; i < input.length; i++) {
+        for (let j = 0; j < input[i].length; j++) {
+          output += input[i][j].trim().padEnd(maxLen[j]) + ', ';
+        }
+        output += '\n';
+      }
+      output = output.slice(0, -3); // 最終行の改行とカンマを削る
+      return output;
+    }
+    /**
+     * このメソッドはカンマ区切りで渡される文字列inputをカンマ区切りで分割し、
+     * output[cols][rows]の配列として返却する
+     * 配列からあふれたデータは切り捨てる。
+     * 
+     * ただし、()にかこまれたカンマでは分割を行わない。
+     * 例：
+     * 〇入力：input=a,b,c,d(e,f),g,h
+     *         rows=2, cols=3
+     * 〇出力：['a','b','c'],
+     *        ['d(e,f)','g','h']
+     **/
+    function changeFormat(input, rows, cols) {
+      console.log(input);
+      let output = [];
+      let temp = input.split(/,(?![^()]*\))/);
+      for (let i = 0; i < rows; i++) {
+        output[i] = [];
+        for (let j = 0; j < cols; j++) {
+          if (temp.length > 0) {
+            output[i][j] = temp.shift();
+          }
+        }
+      }
+      return output;
+    }
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPMクリックゲーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: white;
+            margin: 0;
+            padding: 0;
+        }
+        #container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #bpm, #noteType, #difficulty {
+            margin: 10px;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>BPMクリックゲーム</h1>
+        <div>
+            <label for="bpm">BPM:</label>
+            <input type="number" id="bpm" value="120" min="30" max="300">
+        </div>
+        <div>
+            <label for="noteType">倍:</label>
+            <select id="noteType">
+                <option value="1">1倍</option>
+                <option value="0.5">2倍</option>
+            </select>
+        </div>
+        <div>
+            <label for="difficulty">難易度:</label>
+            <select id="difficulty">
+                <option value="1">簡単</option>
+                <option value="2">普通</option>
+                <option value="3">難しい</option>
+                <option value="4">とても難しい</option>
+                <option value="5">超難しい</option>
+            </select>
+        </div>
+        <button id="startButton">スタート</button>
+        <button id="stopButton" style="display: none;">ストップ</button>
+        <div id="status">準備中...</div>
+        <p id="score">スコア: 0</p>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const bpmInput = document.getElementById('bpm');
+        const noteTypeInput = document.getElementById('noteType');
+        const difficultyInput = document.getElementById('difficulty');
+        const statusDiv = document.getElementById('status');
+        const scoreDisplay = document.getElementById('score');
+        let isPlaying = false;
+        let intervalId;
+        let score = 0;
+        let lastClickTime;
+        const audioContext = new AudioContext();
+
+        function playBeep() {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.type = 'square';
+            oscillator.frequency.value = 1000; // 周波数
+            gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function startGame() {
+            const bpm = parseInt(bpmInput.value);
+            const noteType = parseFloat(noteTypeInput.value);
+            const difficulty = parseInt(difficultyInput.value);
+
+            const interval = (60000 / bpm) * noteType; // ミリ秒
+            const tolerance = interval * (0.2 - (difficulty - 1) * 0.03); // 許容誤差
+
+            score = 0;
+            scoreDisplay.textContent = `スコア: ${score}`;
+            statusDiv.textContent = 'ゲーム開始！テンポに合わせてクリックしてください！';
+            document.body.style.backgroundColor = 'white';
+            isPlaying = true;
+            lastClickTime = null;
+
+            startButton.style.display = 'none';
+            stopButton.style.display = 'inline';
+
+            intervalId = setInterval(() => {
+                playBeep();
+            }, interval);
+        }
+
+        function handleClick() {
+            if (!isPlaying) return;
+
+            const currentTime = performance.now();
+            if (lastClickTime) {
+                const elapsedTime = currentTime - lastClickTime;
+                const bpm = parseInt(bpmInput.value);
+                const noteType = parseFloat(noteTypeInput.value);
+                const interval = (60000 / bpm) * noteType;
+                const difficulty = parseInt(difficultyInput.value);
+                const tolerance = interval * (0.2 - (difficulty - 1) * 0.03);
+
+                if (Math.abs(elapsedTime - interval) <= tolerance) {
+                    document.body.style.backgroundColor = 'green';
+                    score++;
+                    scoreDisplay.textContent = `スコア: ${score}`;
+                } else {
+                    document.body.style.backgroundColor = 'red';
+                    score = 0;
+                    scoreDisplay.textContent = `スコア: ${score}`;
+                }
+            }
+            lastClickTime = performance.now();
+        }
+
+        function stopGame() {
+            isPlaying = false;
+            clearInterval(intervalId);
+            statusDiv.textContent = 'ゲーム終了';
+            document.body.style.backgroundColor = 'white';
+            score = 0;
+            scoreDisplay.textContent = `スコア: ${score}`;
+
+            startButton.style.display = 'inline';
+            stopButton.style.display = 'none';
+        }
+
+        startButton.addEventListener('click', startGame);
+        stopButton.addEventListener('click', stopGame);
+        document.body.addEventListener('click', handleClick);
+    </script>
+</body>
+</html>
